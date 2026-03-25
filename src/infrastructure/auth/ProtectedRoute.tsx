@@ -1,41 +1,28 @@
 /**
  * ============================================================
  * File: ProtectedRoute.tsx
- * Purpose: Route guard using Auth0 authentication state.
- * Redirects unauthenticated users to Auth0 Universal Login.
+ * Purpose: Route guard using Firebase auth.
+ * Redirects unauthenticated users to /login.
  * ============================================================
  */
 
-import { useEffect, type ReactNode } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "./AuthContext";
+import type { ReactNode } from "react";
 
-interface ProtectedRouteProps {
-  children: ReactNode;
-}
-
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      void loginWithRedirect();
-    }
-  }, [isAuthenticated, isLoading, loginWithRedirect]);
+export default function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
       <div style={loadingStyles}>
-        <p style={{ color: "#7d94a8" }}>Checking authentication...</p>
+        <div style={spinnerStyles} />
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return (
-      <div style={loadingStyles}>
-        <p style={{ color: "#7d94a8" }}>Redirecting to login...</p>
-      </div>
-    );
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -47,5 +34,13 @@ const loadingStyles: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   backgroundColor: "#0f1923",
-  fontFamily: "system-ui, sans-serif",
+};
+
+const spinnerStyles: React.CSSProperties = {
+  width: "40px",
+  height: "40px",
+  border: "3px solid rgba(14,124,110,0.2)",
+  borderTop: "3px solid #12a592",
+  borderRadius: "50%",
+  animation: "spin 1s linear infinite",
 };

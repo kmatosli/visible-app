@@ -1,17 +1,26 @@
 /**
  * ============================================================
  * File: LoginPage.tsx
- * Purpose: Public entry point for Visible.
- * Auth0 Universal Login handles the actual authentication.
+ * Purpose: Public entry point. Firebase email/password auth.
+ * Handles both login and registration in one page.
  * ============================================================
  */
 
-import { useAuth0 } from "@auth0/auth0-react";
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
+import { useAuth } from "../../infrastructure/auth/AuthContext";
 import type { CSSProperties } from "react";
 
+type Mode = "login" | "register";
+
 export default function LoginPage() {
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const { isAuthenticated, isLoading, login, register } = useAuth();
+  const [mode, setMode] = useState<Mode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   if (isLoading) {
     return (
@@ -24,6 +33,28 @@ export default function LoginPage() {
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
+
+  const handleSubmit = async () => {
+    setError("");
+    setSubmitting(true);
+    try {
+      if (mode === "login") {
+        await login(email, password);
+      } else {
+        if (!name.trim()) {
+          setError("Name is required.");
+          setSubmitting(false);
+          return;
+        }
+        await register(email, password, name);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Authentication failed.";
+      setError(msg.replace("Firebase: ", "").replace(/\(auth\/.*\)\.?/, "").trim());
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <main style={styles.page}>
@@ -42,11 +73,65 @@ export default function LoginPage() {
           next career moment with complete information.
         </p>
 
+        {/* Mode toggle */}
+        <div style={styles.modeRow}>
+          <button
+            style={mode === "login" ? styles.modeActive : styles.modeInactive}
+            onClick={() => { setMode("login"); setError(""); }}
+          >
+            Sign In
+          </button>
+          <button
+            style={mode === "register" ? styles.modeActive : styles.modeInactive}
+            onClick={() => { setMode("register"); setError(""); }}
+          >
+            Create Account
+          </button>
+        </div>
+
+        {/* Name field — register only */}
+        {mode === "register" && (
+          <input
+            style={styles.input}
+            type="text"
+            placeholder="Full name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        )}
+
+        <input
+          style={styles.input}
+          type="email"
+          placeholder="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          style={styles.input}
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); }}
+        />
+
+        {error && <p style={styles.error}>{error}</p>}
+
         <button
-          style={styles.primaryButton}
-          onClick={() => { void loginWithRedirect(); }}
+          style={{
+            ...styles.primaryButton,
+            opacity: submitting ? 0.7 : 1,
+          }}
+          onClick={() => void handleSubmit()}
+          disabled={submitting}
         >
-          Sign In to Visible
+          {submitting
+            ? "Please wait..."
+            : mode === "login"
+            ? "Sign In to Visible"
+            : "Create My Account"}
         </button>
 
         <p style={styles.note}>
@@ -101,7 +186,53 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     lineHeight: 1.75,
     fontWeight: 300,
-    marginBottom: "28px",
+    marginBottom: "24px",
+  },
+  modeRow: {
+    display: "flex",
+    gap: "8px",
+    marginBottom: "20px",
+  },
+  modeActive: {
+    flex: 1,
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid var(--teal)",
+    background: "rgba(18,165,146,0.12)",
+    color: "var(--teal-light)",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: "0.9rem",
+  },
+  modeInactive: {
+    flex: 1,
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid var(--border)",
+    background: "transparent",
+    color: "var(--muted)",
+    fontWeight: 400,
+    cursor: "pointer",
+    fontSize: "0.9rem",
+  },
+  input: {
+    display: "block",
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: "8px",
+    border: "1px solid var(--border)",
+    background: "var(--ink)",
+    color: "var(--white)",
+    fontSize: "0.95rem",
+    fontFamily: "var(--font-sans)",
+    marginBottom: "12px",
+    boxSizing: "border-box" as const,
+    outline: "none",
+  },
+  error: {
+    color: "#f87171",
+    fontSize: "0.85rem",
+    marginBottom: "12px",
   },
   primaryButton: {
     display: "block",
@@ -116,6 +247,7 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
     fontFamily: "var(--font-sans)",
     letterSpacing: "0.2px",
+    marginTop: "4px",
   },
   note: {
     fontSize: "0.78rem",

@@ -1,33 +1,45 @@
 /**
  * ============================================================
  * File: main.tsx
- * Project: Visible — Career Operating System
- * Purpose: Application entry point. Wires Auth0, routing,
- * and the top level app shell.
+ * Purpose: Application entry point.
+ * Wires Firebase Auth, Redux, React Query, and routing.
  * ============================================================
  */
 
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { Provider } from "react-redux";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "./infrastructure/auth/AuthContext";
+import { store } from "./application/store";
 import App from "./App";
-import { AuthProvider } from "./infrastructure/auth/auth0";
 import "./index.css";
 
-const rootElement = document.getElementById("root");
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
+const rootElement = document.getElementById("root");
 if (!rootElement) {
-  throw new Error(
-    "Root element not found. Ensure index.html contains <div id='root'>"
-  );
+  throw new Error("Root element not found.");
 }
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </QueryClientProvider>
+      </Provider>
     </BrowserRouter>
   </React.StrictMode>
 );

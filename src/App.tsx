@@ -1,34 +1,33 @@
 /**
  * ============================================================
  * File: App.tsx
- * Purpose: Main routing shell for the Visible app.
+ * Purpose: Main routing shell for Visible.
  *
  * Routes:
- *   /                    Dashboard (protected)
- *   /entries             Entry list (protected)
- *   /entries/new         Add entry form (protected)
- *   /entries/:id         Entry detail (protected)
- *   /entries/:id/edit    Edit entry form (protected)
- *   /review-ready        Review Ready flow (protected)
- *   /login               Login page (public)
- *   *                    404 redirect to dashboard
+ *   /          Dashboard (protected)
+ *   /catalog   Product catalog with category filter
+ *   /cart      Promotion case builder / shopping cart
+ *   /orders    Order history
+ *   /profile   User profile (CRUD)
+ *   /login     Login / Register
+ *   *          Redirect to /
  * ============================================================
  */
 
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "./infrastructure/auth/AuthContext";
 
 import ProtectedRoute from "./infrastructure/auth/ProtectedRoute";
 import AppHeader from "./presentation/components/AppHeader";
 import LoginPage from "./presentation/pages/LoginPage";
 import DashboardPage from "./presentation/pages/DashboardPage";
-import EntryListPage from "./presentation/pages/EntryListPage";
-import EntryDetailPage from "./presentation/pages/EntryDetailPage";
-import EntryFormPage from "./presentation/pages/EntryFormPage";
-import ReviewReadyPage from "./presentation/pages/ReviewReadyPage";
+import CatalogPage from "./presentation/pages/CatalogPage";
+import CartPage from "./presentation/pages/CartPage";
+import OrdersPage from "./presentation/pages/OrdersPage";
+import ProfilePage from "./presentation/pages/ProfilePage";
 
 export default function App() {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
     return (
@@ -40,7 +39,6 @@ export default function App() {
 
   return (
     <>
-      {/* Header only shown when authenticated */}
       {isAuthenticated && <AppHeader />}
 
       <Routes>
@@ -57,42 +55,34 @@ export default function App() {
           }
         />
         <Route
-          path="/entries"
+          path="/catalog"
           element={
             <ProtectedRoute>
-              <EntryListPage />
+              <CatalogPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/entries/new"
+          path="/cart"
           element={
             <ProtectedRoute>
-              <EntryFormPage />
+              <CartPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/entries/:id"
+          path="/orders"
           element={
             <ProtectedRoute>
-              <EntryDetailPage />
+              <OrdersPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/entries/:id/edit"
+          path="/profile"
           element={
             <ProtectedRoute>
-              <EntryFormPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/review-ready"
-          element={
-            <ProtectedRoute>
-              <ReviewReadyPage />
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

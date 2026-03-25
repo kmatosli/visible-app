@@ -1,92 +1,77 @@
 /**
  * ============================================================
  * File: AppHeader.tsx
- * Purpose: Top navigation for the authenticated Visible app.
- * Shows the current user, navigation links, and logout.
+ * Purpose: Navigation header with Firebase logout.
  * ============================================================
  */
 
-import { useAuth0 } from "@auth0/auth0-react";
 import { Link, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { useAuth } from "../../infrastructure/auth/AuthContext";
+import type { RootState } from "../../application/store";
 import type { CSSProperties } from "react";
 
 export default function AppHeader() {
-  const { user, logout } = useAuth0();
+  const { logout, profile } = useAuth();
   const location = useLocation();
+  const cartItems = useSelector((s: RootState) => s.cart.items);
+  const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
-  function isActive(path: string): boolean {
-    return location.pathname === path ||
-      location.pathname.startsWith(path + "/");
-  }
+  const navLinks = [
+    { to: "/", label: "Dashboard" },
+    { to: "/catalog", label: "Catalog" },
+    { to: "/orders", label: "Case History" },
+    { to: "/profile", label: "Profile" },
+  ];
 
   return (
     <header style={styles.header}>
       <div style={styles.inner}>
-
-        {/* Brand */}
-        <Link to="/" style={styles.brand}>
-          Visi<span style={{ color: "var(--teal-light)" }}>ble</span>
+        {/* Logo */}
+        <Link to="/" style={styles.logo}>
+          <span style={styles.logoMark}>V</span>
+          <span style={styles.logoText}>isible</span>
         </Link>
 
-        {/* Nav links */}
+        {/* Nav */}
         <nav style={styles.nav}>
-          <Link
-            to="/"
-            style={{
-              ...styles.navLink,
-              ...(isActive("/") && location.pathname === "/" ? styles.navLinkActive : {}),
-            }}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/entries"
-            style={{
-              ...styles.navLink,
-              ...(isActive("/entries") ? styles.navLinkActive : {}),
-            }}
-          >
-            Contributions
-          </Link>
-          <Link
-            to="/entries/new"
-            style={{
-              ...styles.navLink,
-              ...(location.pathname === "/entries/new" ? styles.navLinkActive : {}),
-            }}
-          >
-            + Add Entry
-          </Link>
-          <Link
-            to="/review-ready"
-            style={{
-              ...styles.navLink,
-              ...(isActive("/review-ready") ? styles.navLinkActive : {}),
-            }}
-          >
-            Review Ready
-          </Link>
+          {navLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              style={{
+                ...styles.navLink,
+                ...(location.pathname === link.to ? styles.navLinkActive : {}),
+              }}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
-        {/* User and logout */}
-        <div style={styles.userSection}>
-          {user?.name && (
-            <span style={styles.userName}>
-              {user.name}
-            </span>
-          )}
+        {/* Right actions */}
+        <div style={styles.actions}>
+          {/* Cart badge */}
+          <Link to="/cart" style={styles.cartLink}>
+            🗂
+            {cartCount > 0 && (
+              <span style={styles.cartBadge}>{cartCount}</span>
+            )}
+          </Link>
+
+          {/* User initial */}
+          <Link to="/profile" style={styles.userBadge}>
+            {(profile?.name ?? "V").charAt(0).toUpperCase()}
+          </Link>
+
+          {/* Logout */}
           <button
-            style={styles.logoutButton}
-            onClick={() => {
-              void logout({
-                logoutParams: { returnTo: window.location.origin },
-              });
-            }}
+            style={styles.logoutBtn}
+            onClick={() => void logout()}
           >
             Sign Out
           </button>
         </div>
-
       </div>
     </header>
   );
@@ -94,72 +79,111 @@ export default function AppHeader() {
 
 const styles: Record<string, CSSProperties> = {
   header: {
-    backgroundColor: "rgba(15,25,35,0.97)",
-    backdropFilter: "blur(16px)",
-    borderBottom: "1px solid var(--border)",
-    position: "sticky",
+    position: "sticky" as const,
     top: 0,
-    zIndex: 1000,
-    padding: "0 24px",
+    zIndex: 100,
+    background: "rgba(15,25,35,0.95)",
+    backdropFilter: "blur(8px)",
+    borderBottom: "1px solid var(--border)",
+    fontFamily: "var(--font-sans)",
   },
   inner: {
     maxWidth: "1200px",
     margin: "0 auto",
+    padding: "0 24px",
     height: "60px",
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: "24px",
+    gap: "32px",
   },
-  brand: {
-    fontFamily: "var(--font-serif)",
-    fontSize: "1.5rem",
-    fontWeight: 700,
-    color: "var(--white)",
+  logo: {
     textDecoration: "none",
+    display: "flex",
+    alignItems: "baseline",
+    gap: "1px",
     flexShrink: 0,
+  },
+  logoMark: {
+    fontSize: "1.4rem",
+    fontWeight: 800,
+    color: "var(--teal-light)",
+    fontFamily: "var(--font-serif)",
+  },
+  logoText: {
+    fontSize: "1.1rem",
+    fontWeight: 600,
+    color: "var(--white)",
+    fontFamily: "var(--font-serif)",
   },
   nav: {
     display: "flex",
-    alignItems: "center",
     gap: "4px",
     flex: 1,
   },
   navLink: {
-    color: "var(--muted)",
-    textDecoration: "none",
-    fontSize: "0.82rem",
-    fontWeight: 500,
-    letterSpacing: "0.5px",
     padding: "6px 12px",
     borderRadius: "6px",
-    transition: "all 0.2s",
+    textDecoration: "none",
+    color: "var(--muted)",
+    fontSize: "0.88rem",
+    fontWeight: 500,
+    transition: "color 0.15s",
   },
   navLinkActive: {
     color: "var(--white)",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    background: "rgba(255,255,255,0.06)",
   },
-  userSection: {
+  actions: {
     display: "flex",
     alignItems: "center",
     gap: "12px",
     flexShrink: 0,
   },
-  userName: {
-    fontSize: "0.8rem",
-    color: "var(--muted)",
-    fontWeight: 300,
+  cartLink: {
+    position: "relative" as const,
+    fontSize: "1.2rem",
+    textDecoration: "none",
+    display: "flex",
+    alignItems: "center",
   },
-  logoutButton: {
-    background: "transparent",
-    border: "1px solid rgba(125,148,168,0.25)",
-    color: "var(--muted)",
+  cartBadge: {
+    position: "absolute" as const,
+    top: "-6px",
+    right: "-8px",
+    background: "var(--teal)",
+    color: "var(--white)",
+    fontSize: "0.65rem",
+    fontWeight: 700,
+    borderRadius: "10px",
+    minWidth: "16px",
+    height: "16px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 4px",
+  },
+  userBadge: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "50%",
+    background: "rgba(18,165,146,0.15)",
+    border: "1px solid var(--teal)",
+    color: "var(--teal-light)",
+    fontSize: "0.85rem",
+    fontWeight: 700,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textDecoration: "none",
+  },
+  logoutBtn: {
     padding: "6px 14px",
     borderRadius: "6px",
-    fontSize: "0.78rem",
-    fontWeight: 500,
+    border: "1px solid var(--border)",
+    background: "transparent",
+    color: "var(--muted)",
+    fontSize: "0.82rem",
     cursor: "pointer",
     fontFamily: "var(--font-sans)",
-    transition: "all 0.2s",
   },
 };
