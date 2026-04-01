@@ -1149,7 +1149,7 @@ export interface DepartureSignalScore {
   narrativeSummary: string;
   recommendedAction: string;
   externalMarketValueEstimate?: number | null;
-  whatWouldNeedToChangeTo Stay: string[];
+  whatWouldNeedToChangeToStay: string[];
   changeRequiredByDate?: ISODateString | null;
 }
 
